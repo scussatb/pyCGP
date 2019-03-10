@@ -1,41 +1,46 @@
 import numpy as np
 import random as rnd
 
-class CGP:
-	library = np.array(['add', 'sub', 'mult', 'div'])	
+class CGP: 	
+
+	class CGPFunc:
+		def __init__(self, f, name, arity):
+			self.function = f
+			self.name = name
+			self.arity = arity 
 
 	class CGPNode:
-		def __init__(self, c1, c2, f):
-			self.c1 = c1
-			self.c2 = c2
+		def __init__(self, args, f):
+			self.args = args
 			self.function = f
 
-	def __init__(self, genome, nInputs, nOutputs, nCols, nRows, maxArity):
+	def __init__(self, genome, nInputs, nOutputs, nCols, nRows, library, maxArity):
 		self.genome = genome
 		self.nInputs = nInputs
 		self.nOutputs = nOutputs
 		self.nCols = nCols
 		self.nRows = nRows
 		self.maxGraphLength = nCols * nRows
-		self.createGraph()
+		self.library = library
 		self.maxArity = maxArity
+		self.createGraph()
 	
 	def createGraph(self):
 		self.toEvaluate = np.zeros(self.maxGraphLength, dtype=bool)
 		self.nodeOutput = np.zeros(self.maxGraphLength + self.nInputs, dtype=np.float64)
 		self.nodesUsed = []
 		self.outputGenes = np.zeros(self.nOutputs, dtype=np.int)
-		self.nodes = []
+		self.nodes = np.empty(0, dtype=self.CGPNode)
 		for i in range(0, self.nOutputs):
 			self.outputGenes[i] = self.genome[len(self.genome)-self.nOutputs+i]
 		i = 0
 		while i < len(self.genome) - self.nOutputs:
 			f = self.genome[i]
-			c1 = self.genome[i + 1]
-			c2 = self.genome[i + 2]
-			i += 3
-			self.nodes.append(self.CGPNode(c1, c2, f))
-		self.nodes = np.array(self.nodes)
+			args = np.empty(0, dtype=int)
+			for j in range(0, self.maxArity):
+				args = np.append(args, self.genome[i+j+1])
+			i += self.maxArity + 1
+			self.nodes = np.append(self.nodes, self.CGPNode(args, f))
 		self.nodeToEvaluate()
 	
 	def nodeToEvaluate(self):
@@ -46,10 +51,10 @@ class CGP:
 		p = self.maxGraphLength - 1
 		while p >= 0:
 			if self.toEvaluate[p]:
-				if self.nodes[p].c1 - self.nInputs >= 0:
-					self.toEvaluate[self.nodes[p].c1 - self.nInputs] = True
-				if self.nodes[p].c2 - self.nInputs >= 0:
-					self.toEvaluate[self.nodes[p].c2 - self.nInputs] = True
+				for i in range(0, len(self.nodes[p].args)):
+					arg = self.nodes[p].args[i]
+					if arg - self.nInputs >= 0:
+						self.toEvaluate[arg - self.nInputs] = True
 				self.nodesUsed.append(p)
 			p = p - 1
 		self.nodesUsed = np.array(self.nodesUsed)
@@ -58,28 +63,14 @@ class CGP:
 		for p in range(self.nInputs): 
 			self.nodeOutput[p] = inputData[p]
 
-	def computeNode(self, x, y, f):
-		if f == 0:
-			return x+y
-		elif f == 1:
-			return x-y
-		elif f == 2:
-			return x*y
-		elif f == 3:
-			if y != 0:
-				return x/y
-			else:
-				return x
-		else: 
-			return x
-
 	def computeGraph(self):
 		p = len(self.nodesUsed) - 1
 		while p >= 0:
-			x = self.nodes[self.nodesUsed[p]].c1
-			y = self.nodes[self.nodesUsed[p]].c2
-			f = self.nodes[self.nodesUsed[p]].function
-			self.nodeOutput[self.nodesUsed[p] + self.nInputs] = self.computeNode(self.nodeOutput[x], self.nodeOutput[y], f)
+			args = np.zeros(self.maxArity)
+			for i in range(0, self.maxArity):
+				args[i] = self.nodeOutput[self.nodes[self.nodesUsed[p]].args[i]] 
+			f = self.library[self.nodes[self.nodesUsed[p]].function].function
+			self.nodeOutput[self.nodesUsed[p] + self.nInputs] = f(args)
 			p = p - 1
 
 	def run(self, inputData):
@@ -94,16 +85,16 @@ class CGP:
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.nInputs, self.nOutputs, self.nCols, self.nRows, self.maxArity)
+		return CGP(self.genome, self.nInputs, self.nOutputs, self.nCols, self.nRows, self.library, self.maxArity)
 
 	def mutate(self, nMutations):
 		for i in range(0, nMutations):
 			index = rnd.randint(0, len(self.genome) - 1)
-			if index < self.nCols * self.nRows:
+			if index < self.nCols * self.nRows * (self.maxArity + 1):
 				# this is an internal node
 				if index % (self.maxArity + 1) == 0:
 					# mutate function
-					self.genome[index] = rnd.randint(0, len(CGP.library) - 1)
+					self.genome[index] = rnd.randint(0, len(self.library) - 1)
 				else:
 					# mutate connection
 					self.genome[index] = rnd.randint(0, self.nInputs + (index % (self.maxArity + 1) - 1) * self.nRows)
@@ -113,19 +104,19 @@ class CGP:
 		self.createGraph()		
 
 	@classmethod	
-	def random(cls, nInputs, nOutputs, nCols, nRows, maxArity):
-		genome = np.zeros(nCols * nRows * 3 + nOutputs, dtype=int)
+	def random(cls, nInputs, nOutputs, nCols, nRows, library, maxArity):
+		genome = np.zeros(nCols * nRows * (maxArity+1) + nOutputs, dtype=int)
 		gPos = 0
 		for c in range(0, nCols):
 			for r in range(0, nRows):
-				genome[gPos] = rnd.randint(0, len(CGP.library) - 1)
+				genome[gPos] = rnd.randint(0, len(library) - 1)
 				genome[gPos + 1] = rnd.randint(0, nInputs + c * nRows - 1)
 				genome[gPos + 2] = rnd.randint(0, nInputs + c * nRows - 1)
 				gPos = gPos + 3
 		for o in range(0, nOutputs):
 			genome[gPos] = rnd.randint(0, nInputs + nCols * nRows - 1)
 			gPos = gPos + 1
-		return CGP(genome, nInputs, nOutputs, nCols, nRows, maxArity)
+		return CGP(genome, nInputs, nOutputs, nCols, nRows, library, maxArity)
 
 	@classmethod
 	def test(cls, num):

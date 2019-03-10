@@ -10,6 +10,35 @@ def evaluator(cgp, it):
 		x += 0.1
 	return -fit
 
-cgpFather = CGP.random(1, 1, 10, 1, 2)
-es = CGPES(4, 0.1, cgpFather, evaluator)
-es.run(1000000)
+def add(args):
+	return args[0] + args[1]
+
+def sub(args):
+	return args[0] - args[1]
+
+def mult(args):
+	return args[0] * args[1]
+
+def div(args):
+	if args[1] != 0:
+		return args[0] / args[1]
+	else:
+		return args[0]
+
+def sin(args):
+	return np.sin(args[0])
+
+def cos(args):
+	return np.cos(args[0])
+
+def main():
+	library = [CGP.CGPFunc(add, "add", 2), 
+				CGP.CGPFunc(sub, "sub", 2), 
+				CGP.CGPFunc(mult, "mult", 2), 
+				CGP.CGPFunc(div, "div", 2)] 
+	cgpFather = CGP.random(1, 1, 10, 1, library, 2)
+	es = CGPES(4, 0.1, cgpFather, evaluator)
+	es.run(1000000)
+
+if __name__ == "__main__":
+	main()
