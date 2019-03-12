@@ -17,6 +17,9 @@ class SinEvaluator(Evaluator):
 			fit += abs(np.sin(x) - cgp.run([x])[0])
 			x += 0.1
 		return -fit
+	
+	def clone(self):
+		return SinEvaluator()
 
 class GymEvaluator(Evaluator):
 	def __init__(self, env_name, it_max, ep_max):
@@ -48,6 +51,9 @@ class GymEvaluator(Evaluator):
 		return fit_sum / self.ep_max
 		#return (fit_min + fit_max) / 2.0
 		#return fit_min
+	
+	def clone(self):
+		return GymEvaluator(self.env_name, self.it_max, self.ep_max)
 
 def main():
 	library = [CGP.CGPFunc(add, 'add', 2), 
@@ -63,8 +69,8 @@ def main():
 	# gym lunar test
 	cgpFather = CGP.random(8, 2, 10, 1, library, 2)
 	e = GymEvaluator('LunarLanderContinuous-v2', 500, 3)
-	es = CGPES(4, 0.1, cgpFather, e)
-	es.run(1000000)
+	es = CGPES(4, 0.1, cgpFather, e, 4)
+	es.run(20)
 
 def load(file_name):
 	library = [CGP.CGPFunc(add, 'add', 2), 

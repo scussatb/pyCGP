@@ -23,7 +23,7 @@ class CGP:
 		self.max_graph_length = num_cols * num_rows
 		self.library = library
 		self.max_arity = max_arity
-		self.create_graph()
+		self.graph_created = False
 	
 	def create_graph(self):
 		self.to_evaluate = np.zeros(self.max_graph_length, dtype=bool)
@@ -43,6 +43,7 @@ class CGP:
 			i += self.max_arity + 1
 			self.nodes = np.append(self.nodes, self.CGPNode(args, f))
 		self.node_to_evaluate()
+		self.graph_created = True
 	
 	def node_to_evaluate(self):
 		p = 0
@@ -76,6 +77,9 @@ class CGP:
 			p = p - 1
 
 	def run(self, inputData):
+		if not self.graph_created:
+			self.create_graph()
+
 		self.load_input_data(inputData)
 		self.compute_graph()
 		return self.read_output()
@@ -103,7 +107,6 @@ class CGP:
 			else:
 				# this is an output node
 				self.genome[index] = rnd.randint(0, self.num_inputs + self.num_cols * self.num_rows - 1)
-		self.create_graph()		
 
 	def to_dot(self, file_name):
 		out = open(file_name, 'w')
