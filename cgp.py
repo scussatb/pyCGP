@@ -14,109 +14,162 @@ class CGP:
 			self.args = args
 			self.function = f
 
-	def __init__(self, genome, nInputs, nOutputs, nCols, nRows, library, maxArity):
+	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, max_arity):
 		self.genome = genome
-		self.nInputs = nInputs
-		self.nOutputs = nOutputs
-		self.nCols = nCols
-		self.nRows = nRows
-		self.maxGraphLength = nCols * nRows
+		self.num_inputs = num_inputs
+		self.num_outputs = num_outputs
+		self.num_cols = num_cols
+		self.num_rows = num_rows
+		self.max_graph_length = num_cols * num_rows
 		self.library = library
-		self.maxArity = maxArity
-		self.createGraph()
+		self.max_arity = max_arity
+		self.create_graph()
 	
-	def createGraph(self):
-		self.toEvaluate = np.zeros(self.maxGraphLength, dtype=bool)
-		self.nodeOutput = np.zeros(self.maxGraphLength + self.nInputs, dtype=np.float64)
-		self.nodesUsed = []
-		self.outputGenes = np.zeros(self.nOutputs, dtype=np.int)
+	def create_graph(self):
+		self.to_evaluate = np.zeros(self.max_graph_length, dtype=bool)
+		self.node_output = np.zeros(self.max_graph_length + self.num_inputs, dtype=np.float64)
+		self.nodes_used = []
+		self.output_genes = np.zeros(self.num_outputs, dtype=np.int)
 		self.nodes = np.empty(0, dtype=self.CGPNode)
-		for i in range(0, self.nOutputs):
-			self.outputGenes[i] = self.genome[len(self.genome)-self.nOutputs+i]
+		for i in range(0, self.num_outputs):
+			self.output_genes[i] = self.genome[len(self.genome)-self.num_outputs+i]
 		i = 0
-		while i < len(self.genome) - self.nOutputs:
+		#building node list
+		while i < len(self.genome) - self.num_outputs:
 			f = self.genome[i]
 			args = np.empty(0, dtype=int)
-			for j in range(0, self.maxArity):
+			for j in range(self.max_arity):
 				args = np.append(args, self.genome[i+j+1])
-			i += self.maxArity + 1
+			i += self.max_arity + 1
 			self.nodes = np.append(self.nodes, self.CGPNode(args, f))
-		self.nodeToEvaluate()
+		self.node_to_evaluate()
 	
-	def nodeToEvaluate(self):
+	def node_to_evaluate(self):
 		p = 0
-		while p < self.nOutputs:
-			self.toEvaluate[self.outputGenes[p] - self.nInputs] = True
+		while p < self.num_outputs:
+			if self.output_genes[p] - self.num_inputs >= 0:
+				self.to_evaluate[self.output_genes[p] - self.num_inputs] = True
 			p = p + 1
-		p = self.maxGraphLength - 1
+		p = self.max_graph_length - 1
 		while p >= 0:
-			if self.toEvaluate[p]:
+			if self.to_evaluate[p]:
 				for i in range(0, len(self.nodes[p].args)):
 					arg = self.nodes[p].args[i]
-					if arg - self.nInputs >= 0:
-						self.toEvaluate[arg - self.nInputs] = True
-				self.nodesUsed.append(p)
+					if arg - self.num_inputs >= 0:
+						self.to_evaluate[arg - self.num_inputs] = True
+				self.nodes_used.append(p)
 			p = p - 1
-		self.nodesUsed = np.array(self.nodesUsed)
+		self.nodes_used = np.array(self.nodes_used)
         
-	def loadInputData(self, inputData):
-		for p in range(self.nInputs): 
-			self.nodeOutput[p] = inputData[p]
+	def load_input_data(self, input_data):
+		for p in range(self.num_inputs): 
+			self.node_output[p] = input_data[p]
 
-	def computeGraph(self):
-		p = len(self.nodesUsed) - 1
+	def compute_graph(self):
+		p = len(self.nodes_used) - 1
 		while p >= 0:
-			args = np.zeros(self.maxArity)
-			for i in range(0, self.maxArity):
-				args[i] = self.nodeOutput[self.nodes[self.nodesUsed[p]].args[i]] 
-			f = self.library[self.nodes[self.nodesUsed[p]].function].function
-			self.nodeOutput[self.nodesUsed[p] + self.nInputs] = f(args)
+			args = np.zeros(self.max_arity)
+			for i in range(0, self.max_arity):
+				args[i] = self.node_output[self.nodes[self.nodes_used[p]].args[i]] 
+			f = self.library[self.nodes[self.nodes_used[p]].function].function
+			self.node_output[self.nodes_used[p] + self.num_inputs] = f(args)
 			p = p - 1
 
 	def run(self, inputData):
-		self.loadInputData(inputData)
-		self.computeGraph()
-		return self.readOutput()
+		self.load_input_data(inputData)
+		self.compute_graph()
+		return self.read_output()
 
-	def readOutput(self):
-		output = np.zeros(self.nOutputs)
-		for p in range(0, self.nOutputs):
-			output[p] = self.nodeOutput[self.outputGenes[p]]
+	def read_output(self):
+		output = np.zeros(self.num_outputs)
+		for p in range(0, self.num_outputs):
+			output[p] = self.node_output[self.output_genes[p]]
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.nInputs, self.nOutputs, self.nCols, self.nRows, self.library, self.maxArity)
+		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.max_arity)
 
-	def mutate(self, nMutations):
-		for i in range(0, nMutations):
+	def mutate(self, num_mutationss):
+		for i in range(0, num_mutationss):
 			index = rnd.randint(0, len(self.genome) - 1)
-			if index < self.nCols * self.nRows * (self.maxArity + 1):
+			if index < self.num_cols * self.num_rows * (self.max_arity + 1):
 				# this is an internal node
-				if index % (self.maxArity + 1) == 0:
+				if index % (self.max_arity + 1) == 0:
 					# mutate function
 					self.genome[index] = rnd.randint(0, len(self.library) - 1)
 				else:
 					# mutate connection
-					self.genome[index] = rnd.randint(0, self.nInputs + (index % (self.maxArity + 1) - 1) * self.nRows)
+					self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
 			else:
 				# this is an output node
-				self.genome[index] = rnd.randint(0, self.nInputs + self.nCols * self.nRows - 1)
-		self.createGraph()		
+				self.genome[index] = rnd.randint(0, self.num_inputs + self.num_cols * self.num_rows - 1)
+		self.create_graph()		
+
+	def to_dot(self, file_name):
+		out = open(file_name, 'w')
+		out.write('digraph cgp {\n')
+		out.write('\tsize = "4,4";\n')
+		for i in range(self.num_inputs):
+			out.write('\tin' + str(i) + ' [shape=polygon,sides=5];\n')
+		p = len(self.nodes_used) - 1
+		while p >= 0:
+			print(self.nodes_used[p])
+			func = self.library[self.nodes[self.nodes_used[p]].function]
+			out.write('\t' + func.name + str(self.nodes_used[p] + self.num_inputs) + ' [shape=none];')
+			for i in range(func.arity):
+				connect_id = self.nodes[self.nodes_used[p]].args[i]
+				if connect_id < self.num_inputs:
+					out.write('\tin' + str(connect_id) + ' -> ' + func.name + str(self.nodes_used[p] + self.num_inputs) + ';\n')
+				else:
+					connect_id -= self.num_inputs
+					out.write('\t' + self.library[self.nodes[connect_id].function].name + str(connect_id + self.num_inputs) + ' -> ' + func.name + str(self.nodes_used[p] + self.num_inputs) + ';\n')
+			p = p - 1
+		for i in range(self.num_outputs):
+			if (self.output_genes[i] < self.num_inputs):
+				out.write('\tin' + str(self.output_genes[i]) + ' -> out' + str(i) + ';\n')
+			else:
+				out.write('\t'+ self.library[self.nodes[self.output_genes[i] - self.num_inputs].function].name + str(self.output_genes[i]) + ' -> out' + str(i) + ';\n')
+		out.write('}')
+		out.close()
 
 	@classmethod	
-	def random(cls, nInputs, nOutputs, nCols, nRows, library, maxArity):
-		genome = np.zeros(nCols * nRows * (maxArity+1) + nOutputs, dtype=int)
+	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, max_arity):
+		genome = np.zeros(num_cols * num_rows * (max_arity+1) + num_outputs, dtype=int)
 		gPos = 0
-		for c in range(0, nCols):
-			for r in range(0, nRows):
+		for c in range(0, num_cols):
+			for r in range(0, num_rows):
 				genome[gPos] = rnd.randint(0, len(library) - 1)
-				genome[gPos + 1] = rnd.randint(0, nInputs + c * nRows - 1)
-				genome[gPos + 2] = rnd.randint(0, nInputs + c * nRows - 1)
-				gPos = gPos + 3
-		for o in range(0, nOutputs):
-			genome[gPos] = rnd.randint(0, nInputs + nCols * nRows - 1)
+				for a in range(max_arity):
+					genome[gPos + a + 1] = rnd.randint(0, num_inputs + c * num_rows - 1)
+				gPos = gPos + max_arity + 1
+		for o in range(0, num_outputs):
+			genome[gPos] = rnd.randint(0, num_inputs + num_cols * num_rows - 1)
 			gPos = gPos + 1
-		return CGP(genome, nInputs, nOutputs, nCols, nRows, library, maxArity)
+		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, max_arity)
+
+	def save(self, file_name):
+		out = open(file_name, 'w')
+		out.write(str(self.num_inputs) + ' ')
+		out.write(str(self.num_outputs) + ' ')
+		out.write(str(self.num_cols) + ' ')
+		out.write(str(self.num_rows) + '\n')
+		for g in self.genome:
+			out.write(str(g) + ' ')
+		out.close()
+
+	@classmethod
+	def load_from_file(cls, file_name, library, max_arity):
+		inp = open(file_name, 'r')
+		pams = inp.readline().split()
+		genes = inp.readline().split()
+		inp.close()
+		params = np.empty(0, dtype=int)
+		for p in pams:
+			params = np.append(params, int(p))
+		genome = np.empty(0, dtype=int)
+		for g in genes:
+			genome = np.append(genome, int(g))
+		return CGP(genome, params[0], params[1], params[2], params[3], library, max_arity)
 
 	@classmethod
 	def test(cls, num):
