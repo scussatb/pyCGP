@@ -14,7 +14,7 @@ class CGP:
 			self.args = args
 			self.function = f
 
-	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, max_arity):
+	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library):
 		self.genome = genome
 		self.num_inputs = num_inputs
 		self.num_outputs = num_outputs
@@ -22,7 +22,9 @@ class CGP:
 		self.num_rows = num_rows
 		self.max_graph_length = num_cols * num_rows
 		self.library = library
-		self.max_arity = max_arity
+		self.max_arity = 0
+		for f in self.library:
+			self.max_arity = np.maximum(self.max_arity, f.arity)
 		self.graph_created = False
 	
 	def create_graph(self):
@@ -91,7 +93,7 @@ class CGP:
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.max_arity)
+		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library)
 
 	def mutate(self, num_mutationss):
 		for i in range(0, num_mutationss):
@@ -109,6 +111,8 @@ class CGP:
 				self.genome[index] = rnd.randint(0, self.num_inputs + self.num_cols * self.num_rows - 1)
 
 	def to_dot(self, file_name):
+		if not self.graph_created:
+			self.create_graph()
 		out = open(file_name, 'w')
 		out.write('digraph cgp {\n')
 		out.write('\tsize = "4,4";\n')
@@ -136,7 +140,10 @@ class CGP:
 		out.close()
 
 	@classmethod	
-	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, max_arity):
+	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library):
+		max_arity = 0
+		for f in library:
+			max_arity = np.maximum(max_arity, f.arity)
 		genome = np.zeros(num_cols * num_rows * (max_arity+1) + num_outputs, dtype=int)
 		gPos = 0
 		for c in range(0, num_cols):
@@ -148,7 +155,7 @@ class CGP:
 		for o in range(0, num_outputs):
 			genome[gPos] = rnd.randint(0, num_inputs + num_cols * num_rows - 1)
 			gPos = gPos + 1
-		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, max_arity)
+		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library)
 
 	def save(self, file_name):
 		out = open(file_name, 'w')
@@ -158,13 +165,17 @@ class CGP:
 		out.write(str(self.num_rows) + '\n')
 		for g in self.genome:
 			out.write(str(g) + ' ')
+		out.write('\n')
+		for f in self.library:
+			out.write(f.name + ' ')
 		out.close()
 
 	@classmethod
-	def load_from_file(cls, file_name, library, max_arity):
+	def load_from_file(cls, file_name, library):
 		inp = open(file_name, 'r')
 		pams = inp.readline().split()
 		genes = inp.readline().split()
+		funcs = inp.readline().split()
 		inp.close()
 		params = np.empty(0, dtype=int)
 		for p in pams:
@@ -172,7 +183,7 @@ class CGP:
 		genome = np.empty(0, dtype=int)
 		for g in genes:
 			genome = np.append(genome, int(g))
-		return CGP(genome, params[0], params[1], params[2], params[3], library, max_arity)
+		return CGP(genome, params[0], params[1], params[2], params[3], library)
 
 	@classmethod
 	def test(cls, num):

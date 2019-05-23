@@ -67,7 +67,7 @@ def main():
 	#e = SinEvaluator()
 	
 	# gym lunar test
-	cgpFather = CGP.random(8, 2, 10, 1, library, 2)
+	cgpFather = CGP.random(8, 2, 10, 1, library)
 	e = GymEvaluator('LunarLanderContinuous-v2', 500, 3)
 	es = CGPES(4, 0.1, cgpFather, e, 4)
 	es.run(20)
@@ -79,7 +79,7 @@ def load(file_name):
 				CGP.CGPFunc(div, 'div', 2), 
 				CGP.CGPFunc(sin, 'sin', 1),
 				CGP.CGPFunc(cos, 'cos', 1)] 
-	c = CGP.load_from_file(file_name, library, 2)
+	c = CGP.load_from_file(file_name, library)
 	e = GymEvaluator('LunarLanderContinuous-v2', 500, 100)
 	print(e.evaluate(c, 0, True, True))
 
