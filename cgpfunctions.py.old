@@ -1,0 +1,90 @@
+import numpy as np
+
+def add(args):
+	return 0.5 * (args[0] + args[1])
+
+def sub(args):
+	return args[0] - args[1]
+
+def mult(args):
+	try:
+		return args[0] * args[1]
+	except OverflowError:
+		return 0.0
+
+def div(args):
+	if abs(args[1]) > 0.00001:
+		return args[0] / args[1]
+	else:
+		return args[0]
+
+def sin(args):
+	return np.sin(args[0])
+
+def cos(args):
+	return np.cos(args[0])
+
+def tan(args):
+	return np.tan(args[0])
+
+def exp(args):
+	return np.exp(args[0])
+
+def log(args):
+	if args[0]>0:
+		return np.log(args[0])
+	else:
+		return 0.0
+
+def sigmoid(args):
+	try:
+		return 1.0 / (1.0 + np.exp(-args[0]))
+	except OverflowError:
+		return 0.0
+
+def scale(args):
+	return np.min(np.max(args[0], -1.0), 1.0)
+
+def abs_m(args):
+	return abs(args[0])
+
+def sqrt(args):
+	if args[0] > 0.0:
+		return np.sqrt(args[0])
+	else:
+		return 0.0
+
+def sq(args):
+	return args[0] * args[0]
+
+def pow_m(args):
+	try:
+		if (abs(args[1]) > 0.001 or abs(args[0]) > 0.0001):
+			if (args[0] > 0):
+				return pow(args[0], args[1])
+			else:
+				return pow(args[0], int(args[1]))
+		else:
+			return 0.0
+	except OverflowError:
+		return 0.0
+	except ZeroDivisionError:
+		return 0.0
+
+def one(args):
+	return 1.0
+
+def zero(args):
+	return 0.0
+
+def pi(args):
+	return np.pi
+
+def opp(args):
+	return -args[0]
+
+def inv(args):
+	if args[0] != 0.0:
+		return 1.0 / args[0]
+	else:
+		return 0.0

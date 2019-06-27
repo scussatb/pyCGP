@@ -4,13 +4,14 @@ from evaluator import Evaluator
 from joblib import Parallel, delayed
 
 class CGPES:
-	def __init__(self, num_offsprings, mutation_rate, father, evaluator, num_cpus = 1):
+	def __init__(self, num_offsprings, mutation_rate, father, evaluator, folder='genomes', num_cpus = 1):
 		self.num_offsprings = num_offsprings
 		self.mutation_rate = mutation_rate
 		self.father = father
 		self.num_mutations = int(len(self.father.genome) * self.mutation_rate)
 		self.evaluator = evaluator
 		self.num_cpus = num_cpus
+		self.folder = folder
 		if self.num_cpus > 1:
 			self.evaluator_pool = []
 			for i in range(self.num_offsprings):
@@ -18,7 +19,7 @@ class CGPES:
 
 	def run(self, num_iteration):
 		self.current_fitness = self.evaluator.evaluate(self.father, 0)
-		self.father.save('genomes/cgp_genome_0_' + str(self.current_fitness) + '.txt')
+		self.father.save(self.folder + '/cgp_genome_0_' + str(self.current_fitness) + '.txt')
 		self.offsprings = np.empty(self.num_offsprings, dtype=CGP)
 		self.offspring_fitnesses = np.zeros(self.num_offsprings, dtype=float)
 		for self.it in range(1, num_iteration + 1):
@@ -45,5 +46,7 @@ class CGPES:
 				self.father_was_updated = True
 			# display stats
 			print(self.it, '\t', self.current_fitness, '\t', self.father_was_updated, '\t', self.offspring_fitnesses)
+			print('====================================================')
 			if self.father_was_updated:
-				self.father.save('genomes/cgp_genome_' + str(self.it) + '_' + str(self.current_fitness) + '.txt')
+				#print(self.father.genome)
+				self.father.save(self.folder + '/cgp_genome_' + str(self.it) + '_' + str(self.current_fitness) + '.txt')

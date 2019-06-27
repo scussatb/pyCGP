@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import random as rnd
 
@@ -15,7 +16,7 @@ class CGP:
 			self.function = f
 
 	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library):
-		self.genome = genome
+		self.genome = genome.copy()
 		self.num_inputs = num_inputs
 		self.num_outputs = num_outputs
 		self.num_cols = num_cols
@@ -76,6 +77,13 @@ class CGP:
 				args[i] = self.node_output[self.nodes[self.nodes_used[p]].args[i]] 
 			f = self.library[self.nodes[self.nodes_used[p]].function].function
 			self.node_output[self.nodes_used[p] + self.num_inputs] = f(args)
+			
+			if self.node_output[self.nodes_used[p] + self.num_inputs] != self.node_output[self.nodes_used[p] + self.num_inputs]:
+				print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned NaN with ', args)
+			if (self.node_output[self.nodes_used[p] + self.num_inputs] < -1.0 or
+				self.node_output[self.nodes_used[p] + self.num_inputs] > 1.0):
+				print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned ', self.node_output[self.nodes_used[p] + self.num_inputs], ' with ', args)
+
 			p = p - 1
 
 	def run(self, inputData):
