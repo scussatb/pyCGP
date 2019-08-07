@@ -1,35 +1,4 @@
-import os
-
-import sys
-
-import gym
-import gym_jsbsim
-
 from main import *
-
-#print('make')
-#env = gym.make('JSBSim-ChangeHeadingControlTask-A320-NoFG-v0')
-#print('reset')
-#env.reset()
-#print(env.action_space.low)
-#print(env.action_space.high)
-#d = False
-#while not d:
-#	print('step')
-#	s, e, d, _ = env.step(env.action_space.sample())
-#	print(s)
-#	print(e)
-#	print(d)
-#print(env._get_full_state())
-
-#load(sys.argv[1], sys.argv[2])
-
-#displayFunctions(sys.argv[2])
-
-#toDot(sys.argv[2], sys.argv[2])
-
-
-#quit()
 
 def testGenome(c):
 	testVal = True
@@ -48,6 +17,7 @@ def testGenome(c):
 			print('test failed at output ' + str(i) + ' with value ' + str(c.genome[c.num_cols * c.num_rows * (c.max_arity + 1) + i])) 
 			testVal = False
 	return testVal
+
 
 library = build_funcLib()
 nb_tests = 10000
@@ -69,6 +39,7 @@ for cpt in range(nb_tests):
 if globalVal:
 	print ('[Passed]')
 
+
 message = '1-Random mutation test'
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
@@ -89,6 +60,7 @@ for cpt in range(nb_tests):
 if globalVal:
 	print ('[Passed]')
 
+
 message = 'Per gene mutation test'
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
@@ -108,6 +80,7 @@ for cpt in range(nb_tests):
 		print('Offspring ' + str(c.genome))
 if globalVal:
 	print ('[Passed]')
+
 
 message = 'Goldman mutation test'
 nb_points = nb_chars - len(message)
