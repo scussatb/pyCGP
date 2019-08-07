@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from cgp import CGP
-from evaluator import Evaluator
+from .cgp import CGP
+from .evaluator import Evaluator
 from joblib import Parallel, delayed
 
 class CGPES:

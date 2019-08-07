@@ -1,4 +1,4 @@
-from cgp import CGP
+from .cgp import CGP
 
 class Evaluator:
 	def evaluate(self, cgp, it):
