@@ -15,10 +15,13 @@ class CGP:
 			self.args = args
 			self.function = f
 
-	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance = 1.0):
+	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance = 1.0, recursive = False):
 		self.genome = genome.copy()
+		self.recursive = recursive
 		self.num_inputs = num_inputs
 		self.num_outputs = num_outputs
+		if self.recursive:
+			self.num_inputs += self.num_outputs
 		self.num_cols = num_cols
 		self.num_rows = num_rows
 		self.max_graph_length = num_cols * num_rows
@@ -28,7 +31,7 @@ class CGP:
 		for f in self.library:
 			self.max_arity = np.maximum(self.max_arity, f.arity)
 		self.graph_created = False
-	
+
 	def create_graph(self):
 		self.to_evaluate = np.zeros(self.max_graph_length, dtype=bool)
 		self.node_output = np.zeros(self.max_graph_length + self.num_inputs, dtype=np.float64)
@@ -67,8 +70,12 @@ class CGP:
 		self.nodes_used = np.array(self.nodes_used)
         
 	def load_input_data(self, input_data):
-		for p in range(self.num_inputs): 
+		for p in range(len(input_data)):
 			self.node_output[p] = input_data[p]
+		if self.recursive:
+			output_vals = self.read_output()
+			for q in range(len(output_vals)):
+				self.node_output[p+q] = output_vals[q]
 
 	def compute_graph(self):
 		self.node_output_old = self.node_output.copy()
@@ -103,7 +110,7 @@ class CGP:
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library)
+		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.recursive)
 
 	def mutate(self, num_mutationss):
 		for i in range(0, num_mutationss):
@@ -214,8 +221,10 @@ class CGP:
 				
 
 	@classmethod	
-	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance):
+	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive):
 		max_arity = 0
+		if recursive:
+			num_inputs += num_outputs
 		for f in library:
 			max_arity = np.maximum(max_arity, f.arity)
 		genome = np.zeros(num_cols * num_rows * (max_arity+1) + num_outputs, dtype=int)
@@ -229,14 +238,24 @@ class CGP:
 		for o in range(0, num_outputs):
 			genome[gPos] = rnd.randint(0, num_inputs + num_cols * num_rows - 1)
 			gPos = gPos + 1
-		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance)
+		if recursive:
+			num_inputs -= num_outputs
+		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive)
 
 	def save(self, file_name):
 		out = open(file_name, 'w')
 		out.write(str(self.num_inputs) + ' ')
 		out.write(str(self.num_outputs) + ' ')
 		out.write(str(self.num_cols) + ' ')
-		out.write(str(self.num_rows) + '\n')
+		out.write(str(self.num_rows) + ' ')
+		# retrocomptability mechanisms:
+		# recursivity is stored as last parameters
+		# inputs are stored with recursive output values if recursivity is on
+		# the real number of inputs will be calculated during reading
+		if self.recursive:
+			out.write('1\n')
+		else:
+			out.write('0\n')
 		for g in self.genome:
 			out.write(str(g) + ' ')
 		out.write('\n')
@@ -257,7 +276,13 @@ class CGP:
 		genome = np.empty(0, dtype=int)
 		for g in genes:
 			genome = np.append(genome, int(g))
-		return CGP(genome, params[0], params[1], params[2], params[3], library)
+		# recursivity management made for retrocomptability: see save for functionning
+		recursive = False
+		if len(params) >= 5:
+			recursive = params[4] == 1
+			if recursive:
+				params[0] -= params[1]
+		return CGP(genome, params[0], params[1], params[2], params[3], library, recursive=recursive)
 
 	@classmethod
 	def test(cls, num):
