@@ -20,14 +20,14 @@ def testGenome(c):
 
 
 library = build_funcLib()
-nb_tests = 10000
+nb_tests = 1
 nb_chars = 75
 message = 'Random genome generation test'
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
 for cpt in range(nb_tests):
 	globalVal = True
-	c = CGP.random(7, 4, 100, 1, library, 1.0)
+	c = CGP.random(7, 4, 100, 1, library, recurrency_distance=1.0, recursive=False)
 	testVal = testGenome(c)
 	if cpt % (nb_tests / nb_points) < 1:
 		print('.', end='', flush=True)
@@ -41,11 +41,12 @@ if globalVal:
 
 
 message = '1-Random mutation test'
+nb_tests = 1
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
 for cpt in range(nb_tests):
 	globalVal = True
-	f = CGP.random(7, 4, 100, 1, library, 1.0)
+	f = CGP.random(7, 4, 100, 1, library, recurrency_distance=1.0, recursive=False)
 	c = f.clone()
 	c.mutate(1)
 	testVal = testGenome(c)
@@ -62,11 +63,12 @@ if globalVal:
 
 
 message = 'Per gene mutation test'
+nb_tests = 100000
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
 for cpt in range(nb_tests):
 	globalVal = True
-	f = CGP.random(7, 4, 100, 1, library, 1.0)
+	f = CGP.random(7, 4, 100, 1, library, recurrency_distance=1.0, recursive=False)
 	c = f.clone()
 	c.mutate_per_gene(0.1, 0.3)
 	testVal = testGenome(c)
@@ -83,6 +85,7 @@ if globalVal:
 
 
 message = 'Goldman mutation test'
+nb_tests = 10000
 nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
 for cpt in range(nb_tests):

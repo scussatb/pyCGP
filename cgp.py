@@ -110,7 +110,7 @@ class CGP:
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.recursive)
+		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.recurrency_distance, self.recursive)
 
 	def mutate(self, num_mutationss):
 		for i in range(0, num_mutationss):
@@ -137,7 +137,8 @@ class CGP:
 						self.genome[index] = rnd.randint(0, len(self.library) - 1)
 					else:
 						# mutate connection
-						self.genome[index] = rnd.randint(0, min(self.max_graph_length + self.num_inputs - 1, (self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows) * self.recurrency_distance))
+						self.genome[index] = rnd.randint(0, int(min(self.max_graph_length + self.num_inputs - 1, (self.num_inputs + (
+									int(index / (self.max_arity + 1)) - 1) * self.num_rows) * self.recurrency_distance)))
 						#self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
 			else:
 				# this is an output node

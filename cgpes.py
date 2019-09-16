@@ -33,15 +33,15 @@ class CGPES:
 				for i in range(0, self.num_offsprings):
 					self.offsprings[i] = self.father.clone()
 					#self.offsprings[i].mutate(self.num_mutations)
-					self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
-					#self.offsprings[i].goldman_mutate()
+					#self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
+					self.offsprings[i].goldman_mutate()
 					self.offspring_fitnesses[i] = self.evaluator.evaluate(self.offsprings[i], self.it)
 			else:
 				for i in range(self.num_offsprings):
 					self.offsprings[i] = self.father.clone()
 					#self.offsprings[i].mutate(self.num_mutations)
-					self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
-					#self.offsprings[i].goldman_mutate()
+					#self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
+					self.offsprings[i].goldman_mutate()
 				def offspring_eval_task(offspring_id):
 					return self.evaluator_pool[offspring_id].evaluate(self.offsprings[offspring_id], self.it)
 				self.offspring_fitnesses = Parallel(n_jobs = self.num_cpus)(delayed(offspring_eval_task)(i) for i in range(self.num_offsprings)) 
