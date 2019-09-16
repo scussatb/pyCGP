@@ -7,6 +7,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         'joblib',
-        'numpy'],
+        'numpy',
+        'pytest'
+    ],
     license='MIT',
 )
