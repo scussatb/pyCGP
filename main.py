@@ -1,8 +1,6 @@
-from cgpes import CGPES
-from cgp import CGP
-from cgpfunctions import *
+from pycgp import CGP, CGPES, Evaluator
+from pycgp.cgpfunctions import *
 import numpy as np
-from evaluator import Evaluator
 import sys
 
 class SinEvaluator(Evaluator):
