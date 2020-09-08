@@ -68,7 +68,7 @@ nb_points = nb_chars - len(message)
 print(message, end='', flush=True)
 for cpt in range(nb_tests):
 	globalVal = True
-	f = CGP.random(7, 4, 100, 1, library, recurrency_distance=1.0, recursive=False)
+	f = CGP.random(7, 4, 100, 5, library, recurrency_distance=1.0, recursive=False)
 	c = f.clone()
 	c.mutate_per_gene(0.1, 0.3)
 	testVal = testGenome(c)

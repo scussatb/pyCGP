@@ -122,7 +122,11 @@ class CGP:
 					self.genome[index] = rnd.randint(0, len(self.library) - 1)
 				else:
 					# mutate connection
-					self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
+                                        node_index = int(index / (self.max_arity + 1))
+                                        col_index = int(node_index / self.num_rows)
+                                        self.genome[index] = rnd.randint(0, self.num_inputs + col_index * self.num_rows)
+
+					#self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
 			else:
 				# this is an output node
 				self.genome[index] = rnd.randint(0, self.num_inputs + self.num_cols * self.num_rows - 1)

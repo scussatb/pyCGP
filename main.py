@@ -47,12 +47,12 @@ def build_funcLib():
             ]
 
 
-def evolveSin(folder_name, col=100, row=1, nb_ind=4, mutation_rate_nodes=0.1, mutation_rate_outputs=0.3,
+def evolveSin(folder_name, col=20, row=5, nb_ind=4, mutation_rate_nodes=0.1, mutation_rate_outputs=0.3,
               n_cpus=1, n_it=1000000, genome=None):
     library = build_funcLib()
     e = SinEvaluator()
     if genome is None:
-        cgpFather = CGP.random(1, 1, col, row, library, 1.0)
+        cgpFather = CGP.random(1, 1, col, row, library, 1.0, False)
     else:
         cgpFather = CGP.load_from_file(genome, library)
     print(cgpFather.genome)
