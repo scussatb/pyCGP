@@ -18,23 +18,32 @@ class CGPES:
 			self.evaluator_pool = []
 			for i in range(self.num_offsprings):
 				self.evaluator_pool.append(self.evaluator.clone())
+		self.initialized = False
 
-	def run(self, num_iteration):
+	def initialize(self):
 		if not os.path.isdir(self.folder):
 			os.mkdir(self.folder)
 		self.logfile = open(self.folder + '/out.txt', 'w')
 		self.current_fitness = self.evaluator.evaluate(self.father, 0)
 		self.father.save(self.folder + '/cgp_genome_0_' + str(self.current_fitness) + '.txt')
-		self.offsprings = np.empty(self.num_offsprings, dtype=CGP)
+		self.offsprings = np.empty(self.num_offsprings, dtype=type(self.father))
 		self.offspring_fitnesses = np.zeros(self.num_offsprings, dtype=float)
-		for self.it in range(1, num_iteration + 1):
+		self.initialized = True
+		self.it = 0
+
+	def run(self, num_iteration):
+		if not self.initialized:
+			self.initialize()
+
+		for it in range(num_iteration):
+			self.it += 1
 			#generate offsprings
 			if self.num_cpus == 1:
 				for i in range(0, self.num_offsprings):
 					self.offsprings[i] = self.father.clone()
 					#self.offsprings[i].mutate(self.num_mutations)
-					#self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
-					self.offsprings[i].goldman_mutate()
+					self.offsprings[i].mutate_per_gene(self.mutation_rate_nodes, self.mutation_rate_outputs)
+#					self.offsprings[i].goldman_mutate_2()
 					self.offspring_fitnesses[i] = self.evaluator.evaluate(self.offsprings[i], self.it)
 			else:
 				for i in range(self.num_offsprings):
@@ -47,6 +56,8 @@ class CGPES:
 				self.offspring_fitnesses = Parallel(n_jobs = self.num_cpus)(delayed(offspring_eval_task)(i) for i in range(self.num_offsprings)) 
 			#get the best fitness
 			best_offspring = np.argmax(self.offspring_fitnesses)
+			if not self.evaluator.is_cacheable(self.it):
+				self.current_fitness = self.evaluator.evaluate(self.father, self.it)
 			#compare to father
 			self.father_was_updated = False
 			if self.offspring_fitnesses[best_offspring] >= self.current_fitness:

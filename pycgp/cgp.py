@@ -17,7 +17,7 @@ class CGP:
 			self.const_params = const_params
 			self.function = f
 
-	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance = 1.0, recursive = False, const_precision=1000, const_min = -1.0, const_max = 1.0):
+	def __init__(self, genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance = 1.0, recursive = False, const_min = 0, const_max = 255, input_shape=1, dtype='float'):
 		self.genome = genome.copy()
 		self.recursive = recursive
 		self.num_inputs = num_inputs
@@ -32,8 +32,9 @@ class CGP:
 		self.max_const_params = 0
 		self.const_min = const_min
 		self.const_max = const_max
-		self.const_precision = const_precision
 		self.recurrency_distance = recurrency_distance
+		self.input_shape = input_shape
+		self.dtype = dtype
 		for f in self.library:
 			self.max_arity = np.maximum(self.max_arity, f.arity)
 			self.max_const_params = np.maximum(self.max_const_params, f.const_params)
@@ -41,7 +42,10 @@ class CGP:
 
 	def create_graph(self):
 		self.to_evaluate = np.zeros(self.max_graph_length, dtype=bool)
-		self.node_output = np.zeros(self.max_graph_length + self.num_inputs, dtype=np.float64)
+		if self.input_shape == 1:
+			self.node_output = np.zeros(self.max_graph_length + self.num_inputs, dtype=self.dtype)
+		else:
+			self.node_output = np.zeros(((self.max_graph_length + self.num_inputs), ) + self.input_shape, dtype=self.dtype)
 		self.nodes_used = []
 		self.output_genes = np.zeros(self.num_outputs, dtype=int)
 		self.nodes = np.empty(int(len(self.genome-self.num_outputs)/(1+self.max_arity+self.max_const_params)),
@@ -57,7 +61,6 @@ class CGP:
 			const_params = self.genome[i+1+self.max_arity:i+1+self.max_arity+self.max_const_params]
 			i += self.max_arity + self.max_const_params + 1
 			self.nodes[node_count] = self.CGPNode(args, f, const_params)
-#			print('New node: ', cgp_node.function, ' args: ', args, ' const: ', const_params)
 			node_count += 1
 		self.node_to_evaluate()
 		self.graph_created = True
@@ -82,48 +85,65 @@ class CGP:
 	def load_input_data(self, input_data):
 		for p in range(len(input_data)):
 			self.node_output[p] = input_data[p]
-		if self.recursive:
+		if False : # !!!!!! self.recursive:
 			output_vals = self.read_output()
 			for q in range(len(output_vals)):
 				self.node_output[p+q] = output_vals[q]
 
 	def compute_graph(self):
-		self.node_output_old = self.node_output.copy()
+		#self.node_output_old = self.node_output.copy()
 		p = len(self.nodes_used) - 1
 		while p >= 0:
-			args = np.zeros(self.max_arity)
-			const_params = np.zeros(self.max_const_params)
+			if self.input_shape == 1:
+				args = np.zeros(self.max_arity, dtype=self.dtype)
+			else:
+				args = np.zeros((self.max_arity, ) + self.input_shape, dtype=self.dtype)
+			const_params = np.zeros(self.max_const_params, dtype=np.uint8)
 			for i in range(0, self.max_arity):
-				args[i] = self.node_output_old[self.nodes[self.nodes_used[p]].args[i]]
+				args[i] = self.node_output[self.nodes[self.nodes_used[p]].args[i]]#.copy() # removed _old here
 			for i in range(0, self.max_const_params):
 				const_params[i] = self.nodes[self.nodes_used[p]].const_params[i]
 			f = self.library[self.nodes[self.nodes_used[p]].function].function
-			self.node_output[self.nodes_used[p] + self.num_inputs] = f(args, const_params/self.const_precision/(self.const_max-self.const_min)+self.const_min)
-			
-			if self.node_output[self.nodes_used[p] + self.num_inputs] != self.node_output[self.nodes_used[p] + self.num_inputs]:
-				print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned NaN with ', args, ' and ', const_params)
-			if (self.node_output[self.nodes_used[p] + self.num_inputs] < -1.0 or
-				self.node_output[self.nodes_used[p] + self.num_inputs] > 1.0):
-				print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned ', self.node_output[self.nodes_used[p] + self.num_inputs], ' with ', args)
+			self.node_output[self.nodes_used[p] + self.num_inputs] = f(args, const_params)#.copy()
+
+
+			if self.input_shape == 1:
+				if self.node_output[self.nodes_used[p] + self.num_inputs] != self.node_output[self.nodes_used[p] + self.num_inputs]:
+					print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned NaN with ', args, ' and ', const_params)
+				if (self.node_output[self.nodes_used[p] + self.num_inputs] < -1.0 or
+					self.node_output[self.nodes_used[p] + self.num_inputs] > 1.0):
+					print(self.library[self.nodes[self.nodes_used[p]].function].name, ' returned ', self.node_output[self.nodes_used[p] + self.num_inputs], ' with ', args)
 
 			p = p - 1
 
+#		for i in range(0, self.node_output.shape[0]):
+#			print(str(self.node_output[i].max())+', '+str(self.node_output[i].mean()), end=', ')
+#		print()
+
 	def run(self, inputData):
-		if not self.graph_created:
+		if (not self.graph_created):
 			self.create_graph()
+
+		if isinstance(inputData[0], np.ndarray) and self.input_shape != inputData[0].shape:
+			self.input_shape = inputData[0].shape
+			self.node_output = np.zeros(((self.max_graph_length + self.num_inputs),) + self.input_shape, dtype=self.dtype)
 
 		self.load_input_data(inputData)
 		self.compute_graph()
-		return self.read_output()
+		return self.read_output().copy()
 
 	def read_output(self):
-		output = np.zeros(self.num_outputs)
+		if self.input_shape == 1:
+			output = np.zeros(self.num_outputs, dtype=self.dtype)
+		else:
+			output = np.zeros((self.num_outputs,) + self.input_shape, dtype=self.dtype)
 		for p in range(0, self.num_outputs):
-			output[p] = self.node_output[self.output_genes[p]]
+			output[p] = self.node_output[self.output_genes[p]].copy()
+
 		return output
 
 	def clone(self):
-		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.recurrency_distance, self.recursive)
+		return CGP(self.genome, self.num_inputs, self.num_outputs, self.num_cols, self.num_rows, self.library, self.recurrency_distance, self.recursive, self.const_min, self.const_max, self.input_shape, self.dtype)
 
 	def mutate(self, num_mutationss):
 		node_size = self.max_arity + self.max_const_params + 1
@@ -138,10 +158,11 @@ class CGP:
 					# mutate connection
 					node_index = int(index / node_size)
 					col_index = int(node_index / self.num_rows)
-					self.genome[index] = rnd.randint(0, self.num_inputs + col_index * self.num_rows)
+					self.genome[index] = rnd.randint(0, self.num_inputs + col_index * self.num_rows - 1)
 				else:
 					# mutate const_params
-					self.genome[index] = rnd.randint(0, self.const_precision)
+					self.genome[index] = rnd.randint(self.const_min, self.const_max)
+
 
 				#self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
 			else:
@@ -159,13 +180,17 @@ class CGP:
 						self.genome[index] = rnd.randint(0, len(self.library) - 1)
 					elif index % node_size <= self.max_arity:
 						# mutate connection
-						self.genome[index] = rnd.randint(0, int(min(self.max_graph_length + self.num_inputs - 1, (self.num_inputs + (
-									int(index /node_size) - 1) * self.num_rows) * self.recurrency_distance)))
+						node_index = int(index / node_size)
+						col_index = int(node_index / self.num_rows)
+						self.genome[index] = rnd.randint(0, self.num_inputs + col_index * self.num_rows - 1)
+#						self.genome[index] = rnd.randint(0, int(min(self.max_graph_length + self.num_inputs - 1, (self.num_inputs + (
+#									int(index /node_size) - 1) * self.num_rows) * self.recurrency_distance)))
 					else:
 						# mutate a const param
-						self.genome[index] = rnd.randint(0, self.const_precision)
+						self.genome[index] = rnd.randint(self.const_min, self.const_max)
 						#self.genome[index] = rnd.randint(0, self.num_inputs + (int(index / (self.max_arity + 1)) - 1) * self.num_rows)
 			else:
+
 				# this is an output node
 				if rnd.random() < mutation_rate_outputs:
 					# this is an output node
@@ -191,6 +216,36 @@ class CGP:
 #				print(current_node_used)
 #				print(self.nodes_used)
 #				print('----')
+	
+	def goldman_mutate_2(self):
+		has_functionnaly_mutated = False
+		if not self.graph_created:
+			self.create_graph()
+		current_node_used = self.nodes_used.copy()
+		current_nodes = self.nodes.copy()
+		has_functionnaly_mutated = False
+		i = 0
+		old_self = self.clone()
+		while not has_functionnaly_mutated:
+#			print(str(self)+'mutate')
+			# mutate once
+			self.mutate_per_gene(mutation_rate_nodes=0.15, mutation_rate_outputs=0.3)
+			# build the new graph
+			self.create_graph()
+			input_names = [str(i) for i in range(old_self.num_inputs)]
+			output_names = [str(i) for i in range(old_self.num_outputs)]
+			has_functionnaly_mutated = old_self.to_function_string(input_names, output_names) != self.to_function_string(input_names, output_names)
+			#print(has_functionnaly_mutated)
+			# compare node used
+# 			has_functionnaly_mutated = current_node_used[i] != self.nodes_used[i]
+# 			if not has_functionnaly_mutated:
+# 				# looking inside the node for mutations
+# 				has_functionnaly_mutated = current_nodes[current_node_used[i]].function != self.nodes[self.nodes_used[i]].function
+# 				for j in range(self.library[current_nodes[i].function].const_params):
+# 					const_param = self.nodes[self.nodes_used[i]].const_params[j]
+# 					current_const_param = current_nodes[current_node_used[i]].const_params[j]
+# 					has_functionnaly_mutated = has_functionnaly_mutated or const_param != current_const_param
+# 			i += 1
 
 	def to_dot(self, file_name, input_names, output_names):
 		#TODO: display const_params
@@ -216,7 +271,7 @@ class CGP:
 			node_id = self.library[self.nodes[pos].function].name + '_' + str(pos)
 			node_name = str(pos) + '_' + self.library[self.nodes[pos].function].name + '_'
 			for i in range(self.library[self.nodes[pos].function].const_params):
-				node_name += str(self.nodes[pos].const_params[i]/self.const_precision/(self.const_max-self.const_min)+self.const_min) + '_'
+				node_name += str(self.nodes[pos].const_params[i]) + '_'
 			node_name = node_name[:-1]
 			out.write('\t' + node_id + ' -> ' + to_name + ' [label="' + str(
 					a) + '"];\n')
@@ -230,32 +285,39 @@ class CGP:
 	def to_function_string(self, input_names, output_names):
 		if not self.graph_created:
 			self.create_graph()
+		output = ''
 		for o in range(self.num_outputs):
-			print(output_names[o] + ' = ', end='')
-			self._write_from_gene(self.output_genes[o], input_names, output_names)
-			print(';')
-			print('')
+			output += (output_names[o] + ' = ')
+			output += self._write_from_gene(self.output_genes[o], input_names, output_names)
+			if o < self.num_outputs-1:
+				output += ';\n'
+			else:
+				output += ';'
+#			output += '\n'
+		return output
 
 	def _write_from_gene(self, pos, input_names, output_names):
+		output = ''
 		if pos < self.num_inputs:
-			print(input_names[pos], end='')
+			output += input_names[pos]
 		else:
 			pos -= self.num_inputs
-			print(self.library[self.nodes[pos].function].name + '(', end='')
+			output += self.library[self.nodes[pos].function].name + '('
 			for a in range(self.library[self.nodes[pos].function].arity):
 				#print(' ', end='')
-				self._write_from_gene(self.nodes[pos].args[a], input_names, output_names)
+				output += self._write_from_gene(self.nodes[pos].args[a], input_names, output_names)
 				if a != self.library[self.nodes[pos].function].arity - 1:
-					print(', ', end='')
+					output += ', '
 				#else:
 				#	print(')', end='')
 			for a in range(self.library[self.nodes[pos].function].const_params):
-				print(', ', self.nodes[pos].const_params[a]/self.const_precision/(self.const_max-self.const_min)+self.const_min, end='')
-			print(')', end='')
-				
+				output += ', ' + str(self.nodes[pos].const_params[a])
+			output += ')'
+		return output
+
 
 	@classmethod	
-	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive, const_precision):
+	def random(cls, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive, const_min, const_max, input_shape, dtype):
 		max_arity = 0
 		max_const_params = 0
 		if recursive:
@@ -275,7 +337,7 @@ class CGP:
 					genome[gPos + a + 1] = rnd.randint(0, num_inputs + c * num_rows - 1)
 				# Random constant parameters
 				for a in range(max_const_params):
-					genome[gPos + a + 1 + max_arity] = rnd.randint(0, const_precision)
+					genome[gPos + a + 1 + max_arity] = rnd.randint(const_min, const_max)
 				gPos = gPos + node_size
 		# Random output connections
 		for o in range(0, num_outputs):
@@ -283,7 +345,7 @@ class CGP:
 			gPos = gPos + 1
 		if recursive:
 			num_inputs -= num_outputs
-		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive, const_precision)
+		return CGP(genome, num_inputs, num_outputs, num_cols, num_rows, library, recurrency_distance, recursive, const_min, const_max, input_shape=input_shape, dtype=dtype)
 
 	def save(self, file_name):
 		out = open(file_name, 'w')
@@ -307,7 +369,7 @@ class CGP:
 		out.close()
 
 	@classmethod
-	def load_from_file(cls, file_name, library):
+	def load_from_file(cls, file_name, library, input_shape=1, dtype=int):
 		inp = open(file_name, 'r')
 		pams = inp.readline().split()
 		genes = inp.readline().split()
@@ -325,7 +387,7 @@ class CGP:
 			recursive = params[4] == 1
 			if recursive:
 				params[0] -= params[1]
-		return CGP(genome, params[0], params[1], params[2], params[3], library, recursive=recursive)
+		return CGP(genome, params[0], params[1], params[2], params[3], library, recursive=recursive, input_shape=input_shape, dtype=dtype)
 
 	@classmethod
 	def test(cls, num):

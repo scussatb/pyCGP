@@ -9,6 +9,7 @@ class SinEvaluator(Evaluator):
         super().__init__()
 
     def evaluate(self, cgp, it, displayTrace = False):
+        print(cgp.genome)
         fit = 0.0
         x = 0.0
         while x < 1.0:
@@ -49,21 +50,25 @@ def build_funcLib():
             ]
 
 
-def evolveSin(folder_name, col=20, row=5, nb_ind=4, mutation_rate_nodes=0.1, mutation_rate_outputs=0.3,
-              n_cpus=1, n_it=1, genome=None):
+def evolveSin(folder_name, col=20, row=1, nb_ind=4, mutation_rate_nodes=0.1, mutation_rate_outputs=0.3,
+              n_cpus=1, n_it=100, genome=None):
     library = build_funcLib()
     e = SinEvaluator()
     if genome is None:
-        cgpFather = CGP.random(1, 1, col, row, library, 1.0, False, 1000)
+        cgpFather = CGP.random(1, 1, col, row, library, 1.0, False, const_min=0, const_max=1, input_shape=1, dtype='float')
     else:
         cgpFather = CGP.load_from_file(genome, library)
     print(cgpFather.genome)
     es = CGPES(nb_ind, mutation_rate_nodes, mutation_rate_outputs, cgpFather, e, folder_name, n_cpus)
     es.run(n_it)
 
+    for i in range(10):
+        print(es.father.genome)
+        print(e.evaluate(es.father, 0, False))
+
     es.father.to_function_string(['x'], ['y'])
-    es.father.to_dot(folder_name+'/best.dot', ['x'], ['y'])
-    os.system('dot -Tpdf ' + folder_name+'/best.dot' + ' -o ' + folder_name+'/best.pdf')
+#    es.father.to_dot(folder_name+'/best.dot', ['x'], ['y'])
+#    os.system('dot -Tpdf ' + folder_name+'/best.dot' + ' -o ' + folder_name+'/best.pdf')
 
 
 def load(file_name):
