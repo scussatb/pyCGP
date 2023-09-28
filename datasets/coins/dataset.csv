@@ -1,0 +1,8 @@
+set;input;Label1
+training;coins-1.png;coins-1.roi
+training;coins-2.png;coins-2.zip
+training;coins-3.png;coins-3.zip
+training;coins-4.png;coins-4.png
+training;coins-5.png;coins-5.zip
+testing;coins-6.png;coins-6.zip
+testing;coins-7.png;coins-7.roi
