@@ -31,7 +31,7 @@ class CGPES:
 		self.initialized = True
 		self.it = 0
 
-	def run(self, num_iteration):
+	def run(self, num_iteration, print_every = -1):
 		if not self.initialized:
 			self.initialize()
 
@@ -65,10 +65,12 @@ class CGPES:
 				self.father = self.offsprings[best_offspring]
 				self.father_was_updated = True
 			# display stats
-			print(self.it, '\t', self.current_fitness, '\t', self.father_was_updated, '\t', self.offspring_fitnesses)
 			self.logfile.write(str(self.it) + '\t' + str(self.current_fitness) + '\t' + str(self.father_was_updated) + '\t' + str(self.offspring_fitnesses) + '\n')
-			self.logfile.flush()
-			print('====================================================')
+			if (print_every == -1 or self.it % print_every == 0):
+				print(self.it, '\t', self.current_fitness, '\t', self.father_was_updated, '\t', self.offspring_fitnesses)
+				self.logfile.flush()
+				print('====================================================')
 			if self.father_was_updated:
 				#print(self.father.genome)
 				self.father.save(self.folder + '/cgp_genome_' + str(self.it) + '_' + str(self.current_fitness) + '.txt')
+				self.father.save(self.folder + '/best_genome_' + str(self.it) + '_' + str(self.current_fitness) + '.txt')

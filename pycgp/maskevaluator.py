@@ -26,7 +26,7 @@ class MaskEvaluator(Evaluator):
         self.subset = subset
 
         dataset = pd.read_csv(dirname + dataset_name, sep=';')
-        print(dataset)
+        #print(dataset)
         
         # reading inputs
         self._read_inputs(dataset)
@@ -40,11 +40,11 @@ class MaskEvaluator(Evaluator):
                 cv2.imshow('image', self.original_image[im])
                 for ch in range(len(self.input_channels[im])):
                     cv2.imshow('channel_'+str(ch), self.input_channels[im][ch])
-                    print(self.input_channels[im][ch].shape)
+                    #print(self.input_channels[im][ch].shape)
                 
                 for m in range(len(self.target_masks[im])):
                     cv2.imshow('mask_'+str(m), self.target_masks[im][m])
-                    print(self.target_masks[im][m].shape)
+                    #print(self.target_masks[im][m].shape)
                 
                 cv2.waitKey(0)
                 
@@ -58,7 +58,7 @@ class MaskEvaluator(Evaluator):
         self.in_image_origin_size = []
         self.original_image = []
         self.input_channels = []
-        print(input_filenames)
+        #print(input_filenames)
         for i in range(len(input_filenames)):
             filename = self.dirname + input_filenames[i]
 
@@ -95,8 +95,8 @@ class MaskEvaluator(Evaluator):
                 
     def _read_mask(self, dataset):
         self.target_masks = []
-        print(dataset.shape)
-        print(len(self.in_image_origin_size))
+        #print(dataset.shape)
+        #print(len(self.in_image_origin_size))
 
         subdataset = dataset[dataset['set']==self.subset]
         for i_im in range(subdataset.shape[0]):
@@ -204,9 +204,9 @@ class MaskEvaluator(Evaluator):
         return np.sum(intersection) / np.sum(union)
         
     def read_polygons_from_roi(self, filename, scale=1.0):
-        print(filename)
+        #print(filename)
         rois = ImagejRoi.fromfile(filename)
-        print(rois)
+        #print(rois)
         if type(rois) == ImagejRoi:
             return [rois.coordinates()]
         polygons = [roi.coordinates() for roi in rois]

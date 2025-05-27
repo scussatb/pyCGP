@@ -11,7 +11,7 @@ def f_mult(args, const_params):
 	return args[0] * args[1]
 
 def f_exp(args, const_params):
-	return (np.exp(args[0]) - 1.0) / (np.exp(1.0) - 1.0)
+	return min(1.0, max(-1.0, (np.exp(args[0]) - 1.0) / (np.exp(1.0) - 1.0)))
 
 def f_abs(args, const_params):
 	return abs(args[0])
